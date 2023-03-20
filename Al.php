@@ -524,7 +524,7 @@ class Al
     $index = count( static::$interface_ );
     $index = 0 === $index ? $index : --$index;
 
-//    static::map( $namespace, $directory, $index );
+    static::map( $namespace, $directory, $index );
 
     static::$interface_[] = $package;
 
