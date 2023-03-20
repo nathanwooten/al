@@ -6,8 +6,10 @@
     "php": ">=8.0",
     "nathanwooten/al": "1.0.0"
   },
-  "authors": {
+  "authors": [
+    {
       "name": "Nathan Wooten",
       "homepage": "https://github.com/nathanwooten/al"
-  }
+    }
+  ]
 }

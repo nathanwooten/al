@@ -8,7 +8,7 @@ if ( ! defined( 'DS' ) ) define( 'DS', DIRECTORY_SEPARATOR );
 
 //////////////////////////////////////////////////
 
-require dirname( __FILE__ ) . DS . 'entry.php';
+require dirname( __FILE__ ) . DS . 'PathFind.php';
 
 if ( ! class_exists( 'nathanwooten\Al\Al' ) ) {
 class Al
@@ -591,8 +591,3 @@ class Al
 
 }
 }
-
-//////////////////////////////////////////////////
-
-Al::setCallbacks( 'config.php' );
-Al::run();
