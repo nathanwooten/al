@@ -33,7 +33,7 @@ https://github.com/nathanwooten/al
 composer require nathanwooten\al
 ```
 
-### Require all Composer Dependencies
+### Require all Dependencies (via Composer)
 
 ```php
 <?php
