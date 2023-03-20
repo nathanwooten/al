@@ -1,5 +1,7 @@
 <?php
 
-( require dirname( __FILE__ ) . DIRECTORY_SEPARATOR . 'entry.php' )->pathFind( __FILE__, [ DS . 'al.php' ] ) . DS . 'al.php';
+$entry = require dirname( __FILE__ ) . DIRECTORY_SEPARATOR . 'entry.php';
+require $entry->pathFind( __FILE__, [ DS . 'al.php' ] ) . DS . 'al.php';
 
-print '<h1>Hello World</h1>';
+$uri = new nathanwooten\Http\Uri;
+var_dump( $uri );

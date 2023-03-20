@@ -95,7 +95,6 @@ class Al
     if ( ! static::$registered ) {
       spl_autoload_register( [ __CLASS__, 'load' ], true, true );
       static::$registered = true;
-
     }
 
   }
@@ -108,11 +107,13 @@ class Al
     $result = [];
 
     $callbacks = static::callbackGet();
+
     $i = ++ static::$pointer;
+    while( $callbacks ) {
 
-    while( $callbackArray = array_pop( $callbacks ) ) {
+      $callbackArray = array_pop( $callbacks );
+
       $result[ $i ] = static::call( $callbackArray[0], $callbackArray[1] );
-
       $i++;
     }
 
@@ -122,14 +123,21 @@ class Al
       $result = current( $result );
     }
 
+    return $result;
+
   }
 
-  public static function call( $callback, array $parameters )
+  public static function call( $callback, $parameters )
   {
 
     if ( ! is_callable( $callback ) ) {
       $callback = static::callbackNormal( $callback );
     }
+
+    if ( ! is_array( $parameters ) && is_callable( $parameters ) ) {
+      $parameters = $parameters();
+    }
+
     $parameters = array_values( $parameters );
 
     $result = $callback( ...$parameters );
@@ -164,13 +172,18 @@ class Al
   {
 
     if ( $normal ) {
-      $callback = static::callbackNormal( $callback );
+      $normal = static::callbackNormal( $callback );
     }
 
-    static::$callbacks[] = $callbackArray = [ $callback, $args ];
+    static::$callbacks[] = [ $normal, $args ];
+
+    $parsed = static::parseArgs( $normal, $args );
+    $count = count( static::$callbacks );
+
+    $id = 0 === $count ? 0 : --$count;
 
     foreach ( $args as $property ) {
-      static::map( static::callbackRemove( $callbackArray[0] ), $property, count( static::$callbacks ) -1 );
+      static::map( static::callbackRemove( $normal ), $property, $id );
     }
 
   }
@@ -178,7 +191,7 @@ class Al
   public static function getCallback( $callback, $property )
   {
 
-    $index = static::map( static::nameCallback( $callback ), $property );
+    $index = static::map( static::callbackName( $callback ), $property );
 
     if ( $index && array_key_exists( $index, static::$callbacks ) ) {
       return static::$callbacks[ $index ];
@@ -188,6 +201,10 @@ class Al
 
   public static function callbackGet()
   {
+
+    if ( 0 > static::$pointer ) {
+      return static::$callbacks;
+    }
 
     return array_slice( static::$callbacks, static::$pointer );
 
@@ -248,11 +265,75 @@ class Al
   {
 
     $class = __CLASS__ . '::';
-    $callback = ( 0 === strpos( $callback, $class ) ? substr( $callback, 0, strlen( $class ) -1 ) : $callback );
+    $callback = ( 0 === strpos( $callback, $class ) ? substr( $callback, strlen( $class ) ) : $callback );
 
     $name = $callback;
 
     return $name;
+
+  }
+
+  public static function parseArgs( $normal, array $args = [] )
+  {
+
+    $name = static::callbackRemove( $normal );
+
+    $methods = [ 'path_', 'file_' ];
+
+    if ( in_array( $name, $methods ) ) {
+
+      switch( $name ) {
+
+        case 'path_':
+
+          array_shift( $args );
+          $args = current( $args );
+
+          break;
+      }
+
+      foreach ( $args as $key => $arg ) {
+
+        try {
+          $arg = static::parseArg( $arg );
+        } catch ( Exception $e ) {
+          $arg = static::parseArg( $arg, false );
+        }
+
+        if ( $arg ) {
+          $args[ $key ] = $arg;
+        }
+      }
+    }
+
+    return $args;
+
+  }
+
+  public static function parseArg( $name, $ready = true )
+  {
+
+    if ( $ready ) {
+      $arg = static::path_( $name );
+
+      if ( $arg ) {
+        return $arg;
+      }
+    } else {
+
+       $arg = function ( $arg ) {
+
+         $method = __CLASS__ . '::' . 'parseArg';
+         $result = $method( $arg, true );
+
+         if ( $result ) {
+           return $result;
+         }
+
+         return $arg;
+
+       };
+    }
 
   }
 
@@ -261,14 +342,14 @@ class Al
 
     static::prepare();
 
+    $result = null;
+
     foreach ( static::$interface_ as $package ) {
       $namespace = $package[ static::getKey( 'namespace' ) ];
+      $directory = $package[ static::getKey( 'directory' ) ];
 
-      if ( 0 !== strpos( $interface, $namespace ) ) {
-        continue;
-      }
-
-      $namespace = static::pathNormalize( $namespace, '', DS );
+      $namespace = static::pathNormal( $namespace, '', DS );
+      $directory = static::pathNormal( $directory, null, DS );
 
       if ( 0 !== strpos( $interface, $namespace ) ) {
         continue;
@@ -287,6 +368,7 @@ class Al
       }
 
       $result = require $file;
+      break;
 
     }
 
@@ -299,7 +381,9 @@ class Al
   public static function getKey( $constant )
   {
 
-    return static::INTERFACE_KEYS[ constant( 'self::' . strtoupper( $constant ) . '_' ) ];
+    $key = constant( __CLASS__ . '::' . rtrim( strtoupper( $constant ), '_' ) . '_' );
+
+    return array_key_exists( $key, static::INTERFACE_KEYS ) ? static::INTERFACE_KEYS[ $key ] : null;
 
   }
 
@@ -411,9 +495,12 @@ class Al
   public static function interface_( $namespace, $directory, $support = self::SUPPORT_[4] )
   {
 
-    $mapped = static::map( $namespace, $directory );
-    if ( $mapped ) {
-      return static::$interface_[ $mapped ];
+    try {
+      $mapped = static::map( $namespace, $directory );
+      if ( $mapped && array_key_exists( $mapped, static::$interface_ ) ) {
+        return static::$interface_[ $mapped ];
+      }
+    } catch( Exception $e ) {      
     }
 
     $package = null;
@@ -422,20 +509,27 @@ class Al
     $package = [];
 
     $package[ static::getKey( 'namespace' ) ] = $namespace;
-    $path = static::getPath( $directory );
 
-    if ( $path ) {
+    try {
+      $path = static::path_( $directory );
+    } catch ( Exception $e ) {
+    }
+
+    if ( isset( $path ) && $path ) {
       $directory = $path;
     }
 
     $package[ static::getKey( 'directory' ) ] = $directory;
     $package[ static::getKey( 'support' ) ] = $support;
 
-    static::map( $namespace, $directory, count( $this->interface_ ) );
+    $index = count( static::$interface_ );
+    $index = 0 === $index ? $index : --$index;
+
+//    static::map( $namespace, $directory, $index );
 
     static::$interface_[] = $package;
 
-    return $namespace;
+    return count( static::$interface_ ) -1;
 
   }
 
@@ -444,6 +538,10 @@ class Al
 
     if ( array_key_exists( $name, static::$path_ ) ) {
       return static::$path_[ $name ];
+    }
+
+    if ( empty( $append ) ) {
+      throw new Exception( 'Unavailable, ' . $name );
     }
 
     $path = ''; 
@@ -477,15 +575,16 @@ class Al
     } else {
 
       if ( ! is_readable( $file ) ) {
-        $file = static::getPath( $file );
+        $file = static::path_( $file );
       }
 
       if ( $file && is_file( $file ) && is_readable( $file ) ) {
-        static::$file_[ $file ] = require_once $file;
       } else {
-        throw Exception( 'File not actionable, ' . $file );
+        throw new Exception( 'File not actionable, ' . $file );
       }
    }
+
+   static::$file_[ $file ] = require $file;
 
    return static::$file_[ $file ];
 
