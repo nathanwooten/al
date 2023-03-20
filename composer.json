@@ -3,7 +3,7 @@
   "description": "The best autoloader.",
   "license": "MIT",
   "require": {
-    "php": ">=8.0"
+    "php": ">=8.0",
     "nathanwooten/al": "1.0.0"
   },
   "authors": [
