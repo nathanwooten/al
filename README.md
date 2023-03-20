@@ -2,5 +2,7 @@
 
 From an index file:
 
+```php
 $pathFind = require dirname( __FILE__ ) . DIRECTORY_SEPARATOR . 'entry.php';
 require $pathFind->pathFind( __FILE__, [ 'al.php' ] ) . DS . 'al.php';
+```
