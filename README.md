@@ -23,7 +23,7 @@ The config is FIFO.
 
 https://github.com/nathanwooten/al
 
- - or -
+ - or
 
 ## Composer
 
