@@ -1,6 +1,14 @@
 # al
 
-From an index file:
+## Simple Require:
+
+```php
+<?php
+
+require_once 'al.php';
+```
+
+## From an Index File using Entry Point:
 
 ```php
 <?php
@@ -10,6 +18,12 @@ require $pathFind->pathFind( __FILE__, [ 'al.php' ] ) . DS . 'al.php';
 ```
 
 The config is FIFO.
+
+## Download
+
+https://github.com/nathanwooten/al
+
+ - or -
 
 ## Composer
 
@@ -21,6 +35,8 @@ composer require nathanwooten\al
 
 ### Require all Composer Dependencies
 
-```
+```php
+<?php
+
 require_once 'vendor' . DIRECTORY_SEPARATOR . 'autoload.php';
 ```
