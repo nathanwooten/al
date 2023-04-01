@@ -4,7 +4,7 @@
   "license": "MIT",
   "require": {
     "php": "^8.0",
-    "nathanwooten/pathfind": "v1.0.0"
+    "nathanwooten/pathfind": "1.1.0"
   },
   "authors": [
     {
