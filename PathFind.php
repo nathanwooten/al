@@ -1,8 +1,11 @@
 <?php
 
 /**
- * entry.php file,
+ * PathFind.php file,
  * located in directories with dependencies
+ *
+ * MIT License
+ * Copyright 2023 Nathan Wooten
  */
 
 namespace nathanwooten\pathfind;
@@ -13,32 +16,50 @@ if ( ! class_exists( 'nathanwooten\pathfind\PathFind' ) ) {
 class PathFind
 {
 
-  public function pathFind( $directory, array $targetDirectoryContains )
+  public static array $pathFind = [];
+
+  public string $response;
+
+  public string $path;
+  public array $targetContains;
+
+  public function pathFind( $path, array $targetContains ) : PathFind
   {
 
-    $directory = (string) $directory;
-    if ( ! is_string( $directory ) ) {
-      throw new Exception( 'Directory must be stringable' );
+    $path = (string) $path;
+
+    if ( ! is_string( $path ) ) {
+      throw new Exception( 'Path must be stringable, ' . __CLASS__ . '::' . 'pathFind' );
     }
 
-    if ( is_file( $directory ) ) {
-      $directory = dirname( $directory ) . DIRECTORY_SEPARATOR;
+    if ( $has = $this->has( $path, $targetContains ) ) {
+      return $has;
+    }
+
+    $this->path = $path;
+    $this->targetContains = $targetContains;
+
+    static::$pathFind[ $path ] = $this;
+    static::$pathFind[ implode( ',', $targetContains ) ] = $this;
+
+    if ( is_file( $path ) ) {
+      $path = dirname( $path ) . DIRECTORY_SEPARATOR;
     }
 
     // no contents, no search
-    if ( empty( $targetDirectoryContains ) ) {
+    if ( empty( $targetContains ) ) {
       return false;
     }
 
-    while( $directory && ( ! isset( $count ) || ! $count ) ) {
+    while( $path && ( ! isset( $count ) || ! $count ) ) {
 
-      $directory = rtrim( $directory, DIRECTORY_SEPARATOR . '\\/' ) . DIRECTORY_SEPARATOR;
+      $path = rtrim( $path, DIRECTORY_SEPARATOR . '\\/' ) . DIRECTORY_SEPARATOR;
 
       $is = [];
 
       // loop through 'contains'
-      foreach ( $targetDirectoryContains as $contains ) {
-        $item = $directory . $contains;
+      foreach ( $targetContains as $contains ) {
+        $item = $path . $contains;
 
         // readable item?, add to $is
         if ( is_readable( $item ) ) {
@@ -50,7 +71,7 @@ class PathFind
 
       // expected versus is
       $isCount = count( $is );
-      $containsCount = count( $targetDirectoryContains );
+      $containsCount = count( $targetContains );
 
       $count = ( $isCount === $containsCount );
 
@@ -59,9 +80,9 @@ class PathFind
         break;
       } else {
 
-        $parent = dirname( $directory );
+        $parent = dirname( $path );
 
-        if ( $parent === $directory ) {
+        if ( $parent === $path ) {
 
           // if root reached break the loop
           throw new Exception( 'Reached root in, ' . __FILE__ . ' ' . __FUNCTION__ );
@@ -69,7 +90,7 @@ class PathFind
         } else {
 
           // continue up
-          $directory = $parent;
+          $path = $parent;
 
         }
 
@@ -78,15 +99,67 @@ class PathFind
 
     }
 
-    if ( $directory ) {
-      $directory = rtrim( $directory, '\\/' );
+    if ( $path ) {
+      $path = rtrim( $path, '\\/' );
     }
 
-    return $directory;
+    $this->response = $path;
+
+    return $this;
+
+  }
+
+  public function withPath( $path ) : PathFind
+  {
+
+    if ( $has = $this->has( $path, $this->targetContains ) ) {
+      return $has;
+    }
+
+    $clone = clone $this;
+    $clone->pathFind( $path, $this->targetContains );
+
+    return $clone;
+
+  }
+
+  public function withContains( array $targetContains ) : PathFind
+  {
+
+    if ( $has = $this->has( $this->path, $targetContains ) ) {
+      return $has;
+    }
+
+    $clone = clone $this;
+    $clone->pathFind( $this->path, $targetContains );
+
+    return $clone;
+
+  }
+
+  public function has( $path, $targetContains )
+  {
+
+    if ( isset( static::$pathFind[ $path ] ) && static::$pathFind[ $path ]->targetContains === $targetContains ) {
+      return static::$pathFind[ $path ];
+    }
+
+    $tc = implode( ',', $targetContains );
+
+    if ( $tc && isset( static::$pathFind[ $tc ] ) && static::$pathFind[ $tc ]->path === $path ) {
+      return static::$pathFind[ $tc ];
+    }
+
+    return false;
+
+  }
+
+  public function __toString()
+  {
+
+    return $this->response;
 
   }
 
 }
 }
-
-return new PathFind;
