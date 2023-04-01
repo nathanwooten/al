@@ -3,7 +3,7 @@
   "description": "The best autoloader.",
   "license": "MIT",
   "require": {
-    "php": "^8.0",
+    "php": "^7.3",
     "nathanwooten/pathfind": "1.1.0"
   },
   "authors": [
