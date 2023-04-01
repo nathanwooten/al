@@ -145,7 +145,7 @@ class Al
 
   }
 
-  public static function setCallbacks( array|string $callbacks )
+  public static function setCallbacks( $callbacks )
   {
 
     if ( ! is_array( $callbacks ) ) {
